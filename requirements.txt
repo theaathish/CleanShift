@@ -1,7 +1,7 @@
 # GUI Application Dependencies
-psutil>=5.9.0
-pillow>=9.0.0
+psutil>=5.9.0,<6.0.0
+pillow>=9.0.0,<11.0.0
 pywin32>=306; sys_platform == "win32"
 
 # Build Dependencies (for development)
-pyinstaller>=5.0.0
+pyinstaller==5.13.2
