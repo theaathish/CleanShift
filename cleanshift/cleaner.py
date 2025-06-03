@@ -119,6 +119,24 @@ class SystemCleaner:
         
         return total_freed
     
+    def clean_recycle_bin(self, dry_run: bool = False) -> int:
+        """Empty the recycle bin"""
+        if dry_run:
+            return 0  # Can't easily calculate recycle bin size
+        
+        try:
+            import win32api
+            import win32con
+            
+            # Empty recycle bin for all drives
+            win32api.SHEmptyRecycleBin(None, None, 
+                                      win32con.SHERB_NOCONFIRMATION | 
+                                      win32con.SHERB_NOPROGRESSUI | 
+                                      win32con.SHERB_NOSOUND)
+            return 0  # Size unknown
+        except Exception:
+            return 0
+    
     def _get_directory_size(self, path: str) -> int:
         """Calculate total size of a directory"""
         total_size = 0

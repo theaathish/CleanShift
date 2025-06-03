@@ -147,9 +147,6 @@ class CleanShiftGUI:
         self.create_dashboard_tab()
         self.create_clean_tab()
         self.create_analyze_tab()
-        self.create_move_tab()
-        self.create_environments_tab()
-        self.create_settings_tab()
         self.create_about_tab()
     
     def create_header(self, parent):
@@ -158,28 +155,9 @@ class CleanShiftGUI:
         header_frame.pack(fill='x', pady=(0, 20))
         header_frame.pack_propagate(False)
         
-        # Logo
-        try:
-            if PIL_AVAILABLE:
-                if getattr(sys, 'frozen', False):
-                    logo_path = os.path.join(sys._MEIPASS, 'assets', 'logo.png')
-                else:
-                    logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'logo.png')
-                
-                if os.path.exists(logo_path):
-                    img = Image.open(logo_path)
-                    img = img.resize((64, 64), Image.Resampling.LANCZOS)
-                    self.logo = ImageTk.PhotoImage(img)
-                    logo_label = tk.Label(header_frame, image=self.logo, bg=self.colors['white'])
-                    logo_label.pack(side='left', padx=20, pady=8)
-                else:
-                    raise FileNotFoundError
-            else:
-                raise ImportError
-        except (ImportError, FileNotFoundError, Exception):
-            # Fallback logo
-            logo_label = tk.Label(header_frame, text="🚀", font=('Arial', 32), bg=self.colors['white'])
-            logo_label.pack(side='left', padx=20, pady=8)
+        # Logo (emoji fallback)
+        logo_label = tk.Label(header_frame, text="🚀", font=('Arial', 32), bg=self.colors['white'])
+        logo_label.pack(side='left', padx=20, pady=8)
         
         # Title and description
         title_frame = tk.Frame(header_frame, bg=self.colors['white'])
@@ -243,22 +221,6 @@ class CleanShiftGUI:
         ttk.Button(quick_buttons, text="🔄 Refresh Status", 
                   command=self.refresh_dashboard).pack(side='left')
         
-        # System info
-        info_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        info_frame.pack(fill='x', padx=20, pady=20)
-        
-        tk.Label(info_frame, text="System Information", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        self.system_info_label = tk.Label(info_frame, text="", 
-                                         font=('Arial', 10), 
-                                         fg=self.colors['gray_600'], 
-                                         bg=self.colors['gray_50'],
-                                         justify='left')
-        self.system_info_label.pack(anchor='w')
-        
         # Load initial data
         self.refresh_dashboard()
     
@@ -267,45 +229,50 @@ class CleanShiftGUI:
         tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
         self.notebook.add(tab_frame, text="  🧹 Clean  ")
         
-        # Scrollable frame
-        canvas = tk.Canvas(tab_frame, bg=self.colors['gray_50'])
-        scrollbar = ttk.Scrollbar(tab_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg=self.colors['gray_50'])
+        # Clean options section
+        clean_frame = tk.Frame(tab_frame, bg=self.colors['white'], 
+                              relief='solid', borderwidth=1, padx=20, pady=15)
+        clean_frame.pack(fill='x', padx=20, pady=20)
         
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        tk.Label(clean_frame, text="🗃️ System Files", 
+                font=('Arial', 14, 'bold'), 
+                fg=self.colors['gray_800'], 
+                bg=self.colors['white']).pack(anchor='w', pady=(0, 10))
         
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        # Create checkboxes for cleaning options
+        options = [
+            ("Temporary Files", "temp_files", "Clean system and user temp files"),
+            ("Browser Cache", "browser_cache", "Clear browser cache files"),
+            ("System Cache", "system_cache", "Clear Windows system cache"),
+            ("Recycle Bin", "recycle_bin", "Empty recycle bin")
+        ]
         
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        for option_text, option_key, description in options:
+            option_frame = tk.Frame(clean_frame, bg=self.colors['white'])
+            option_frame.pack(fill='x', pady=2)
+            
+            var = tk.BooleanVar()
+            self.clean_vars[option_key] = var
+            
+            cb = tk.Checkbutton(option_frame, text=option_text, 
+                               variable=var, bg=self.colors['white'],
+                               font=('Arial', 11))
+            cb.pack(side='left')
+            
+            tk.Label(option_frame, text=description, 
+                    font=('Arial', 9), 
+                    fg=self.colors['gray_600'], 
+                    bg=self.colors['white']).pack(side='left', padx=(10, 0))
         
-        # Clean options
-        self.create_clean_section(scrollable_frame, "🗃️ System Files", [
-            ("Temporary Files", "clean_temp", "Clean system and user temp files"),
-            ("Browser Cache", "clean_browser", "Clear browser cache files"),
-            ("System Cache", "clean_system", "Clear Windows system cache"),
-            ("Recycle Bin", "clean_recycle", "Empty recycle bin"),
-        ])
+        # Clean buttons
+        clean_buttons = tk.Frame(tab_frame, bg=self.colors['gray_50'])
+        clean_buttons.pack(fill='x', padx=20, pady=20)
         
-        self.create_clean_section(scrollable_frame, "⚡ Memory & Performance", [
-            ("RAM Cache", "clean_ram", "Clear RAM cache and optimize memory"),
-            ("DNS Cache", "clean_dns", "Flush DNS cache"),
-            ("Registry Cleanup", "clean_registry", "Clean invalid registry entries"),
-        ])
-        
-        # Clean all button
-        clean_all_frame = tk.Frame(scrollable_frame, bg=self.colors['gray_50'])
-        clean_all_frame.pack(fill='x', padx=20, pady=20)
-        
-        ttk.Button(clean_all_frame, text="🚀 Clean All Selected", 
+        ttk.Button(clean_buttons, text="🚀 Clean Selected", 
                   style='Primary.TButton',
-                  command=self.clean_all_selected).pack(side='left', padx=(0, 10))
+                  command=self.clean_selected).pack(side='left', padx=(0, 10))
         
-        ttk.Button(clean_all_frame, text="👁️ Preview Changes", 
+        ttk.Button(clean_buttons, text="👁️ Preview Changes", 
                   command=self.preview_clean).pack(side='left')
     
     def create_analyze_tab(self):
@@ -313,603 +280,285 @@ class CleanShiftGUI:
         tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
         self.notebook.add(tab_frame, text="  🔍 Analyze  ")
         
-        # Analysis options
-        options_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        options_frame.pack(fill='x', padx=20, pady=20)
+        # Controls
+        controls_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
+        controls_frame.pack(fill='x', padx=20, pady=20)
         
-        tk.Label(options_frame, text="Analyze Options", 
+        tk.Label(controls_frame, text="Disk Space Analysis", 
                 font=('Arial', 16, 'bold'), 
                 fg=self.colors['gray_800'], 
                 bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
         
-        # Min size slider
-        min_size_frame = tk.Frame(options_frame, bg=self.colors['gray_50'])
-        min_size_frame.pack(fill='x', pady=(0, 10))
-        
-        tk.Label(min_size_frame, text="Minimum Size (MB):", 
-                 font=('Arial', 12), 
-                 fg=self.colors['gray_700'], 
-                 bg=self.colors['gray_50']).pack(side='left', anchor='w')
-        
-        self.min_size_var = tk.IntVar(value=100)
-        min_size_slider = ttk.Scale(min_size_frame, from_=1, to=1000, 
-                                    variable=self.min_size_var, 
-                                    orient="horizontal",
-                                    command=self.update_min_size_label)
-        min_size_slider.pack(side='left', fill='x', expand=True)
-        
-        self.min_size_label = tk.Label(min_size_frame, text="100 MB", 
-                                       font=('Arial', 12, 'bold'), 
-                                       fg=self.colors['primary'], 
-                                       bg=self.colors['gray_50'])
-        self.min_size_label.pack(side='left', padx=(10, 0))
-        
-        # Analyze button
-        analyze_button = ttk.Button(options_frame, text="📊 Analyze Disk", 
-                                   style='Primary.TButton',
-                                   command=self.analyze_disk)
-        analyze_button.pack(fill='x', pady=(10, 0))
-        
-        # Results treeview
-        results_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        results_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
-        
-        tk.Label(results_frame, text="Analysis Results", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        self.results_tree = ttk.Treeview(results_frame, 
-                                         style="Modern.Treeview",
-                                         columns=("Path", "Size", "Type"), 
-                                         show="headings")
-        self.results_tree.pack(fill='both', expand=True)
-        
-        # Define column headings
-        for col in ["Path", "Size", "Type"]:
-            self.results_tree.heading(col, text=col, 
-                                    command=lambda c=col: self.sort_results(c))
-            self.results_tree.column(col, anchor="w", width=250)
-        
-        # Bind double-click to open folder
-        self.results_tree.bind("<Double-1>", self.open_folder)
-    
-    def create_move_tab(self):
-        """Create tab for moving packages/folders"""
-        tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
-        self.notebook.add(tab_frame, text="  📦 Move Apps  ")
-        
-        # Move options
-        options_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        options_frame.pack(fill='x', padx=20, pady=20)
-        
-        tk.Label(options_frame, text="Move Options", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        # Source and target path entries
-        path_frame = tk.Frame(options_frame, bg=self.colors['gray_50'])
+        # Path selection
+        path_frame = tk.Frame(controls_frame, bg=self.colors['gray_50'])
         path_frame.pack(fill='x', pady=(0, 10))
         
-        tk.Label(path_frame, text="Source Path:", 
-                 font=('Arial', 12), 
-                 fg=self.colors['gray_700'], 
-                 bg=self.colors['gray_50']).pack(side='left', anchor='w')
-        
-        self.source_path_var = tk.StringVar()
-        source_entry = ttk.Entry(path_frame, textvariable=self.source_path_var, 
-                                font=('Arial', 12))
-        source_entry.pack(side='left', fill='x', expand=True)
+        tk.Label(path_frame, text="Scan Path:", bg=self.colors['gray_50']).pack(side='left')
+        path_entry = tk.Entry(path_frame, textvariable=self.scan_path, width=40)
+        path_entry.pack(side='left', padx=(10, 5))
         
         ttk.Button(path_frame, text="Browse", 
-                  command=self.browse_source_folder).pack(side='right')
+                  command=self.browse_scan_path).pack(side='left', padx=(5, 10))
         
-        tk.Label(path_frame, text="Target Drive:", 
-                 font=('Arial', 12), 
-                 fg=self.colors['gray_700'], 
-                 bg=self.colors['gray_50']).pack(side='left', anchor='w', padx=(10, 0))
-        
-        self.target_drive_var = tk.StringVar(value="D:")
-        target_entry = ttk.Entry(path_frame, textvariable=self.target_drive_var, 
-                                font=('Arial', 12))
-        target_entry.pack(side='left', fill='x', expand=True)
-        
-        ttk.Button(path_frame, text="Browse", 
-                  command=self.browse_target_drive).pack(side='right', padx=(10, 0))
-        
-        # Move button
-        move_button = ttk.Button(options_frame, text="📦 Move Now", 
-                                style='Primary.TButton',
-                                command=self.move_packages)
-        move_button.pack(fill='x', pady=(10, 0))
-        
-        # Status label
-        self.status_label = tk.Label(tab_frame, text="", 
-                                    font=('Arial', 12), 
-                                    fg=self.colors['gray_600'], 
-                                    bg=self.colors['gray_50'],
-                                    wraplength=600, justify="left")
-        self.status_label.pack(fill='x', padx=20, pady=(0, 20))
-    
-    def create_environments_tab(self):
-        """Create tab for managing development environments"""
-        tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
-        self.notebook.add(tab_frame, text="  🔧 Dev Environments  ")
-        
-        # Environment options
-        options_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        options_frame.pack(fill='x', padx=20, pady=20)
-        
-        tk.Label(options_frame, text="Environment Options", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        # Listbox for installed environments
-        list_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        list_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
-        
-        self.env_listbox = tk.Listbox(list_frame, 
-                                      bg=self.colors['white'], 
-                                      fg=self.colors['gray_800'], 
-                                      font=('Arial', 12),
-                                      selectmode="multiple")
-        self.env_listbox.pack(fill='both', expand=True)
-        
-        # Scrollbar for listbox
-        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.env_listbox.yview)
-        scrollbar.pack(side="right", fill="y")
-        self.env_listbox.config(yscrollcommand=scrollbar.set)
-        
-        # Action buttons
-        action_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        action_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ttk.Button(action_frame, text="🗑️ Remove Selected", 
-                  style='Danger.TButton',
-                  command=self.remove_selected_envs).pack(side='left', padx=(0, 10))
-        
-        ttk.Button(action_frame, text="🔄 Refresh List", 
-                  command=self.refresh_env_list).pack(side='left')
-        
-        # Status label
-        self.env_status_label = tk.Label(tab_frame, text="", 
-                                        font=('Arial', 12), 
-                                        fg=self.colors['gray_600'], 
-                                        bg=self.colors['gray_50'],
-                                        wraplength=600, justify="left")
-        self.env_status_label.pack(fill='x', padx=20, pady=(0, 20))
-    
-    def create_settings_tab(self):
-        """Create settings and installation tab"""
-        tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
-        self.notebook.add(tab_frame, text="  ⚙️ Settings  ")
-        
-        # Installation status
-        install_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        install_frame.pack(fill='x', padx=20, pady=20)
-        
-        tk.Label(install_frame, text="Installation Status", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        self.install_status_label = tk.Label(install_frame, text="", 
-                                            font=('Arial', 12), 
-                                            fg=self.colors['gray_600'], 
-                                            bg=self.colors['gray_50'],
-                                            wraplength=600, justify="left")
-        self.install_status_label.pack(fill='x', pady=(0, 10))
-        
-        ttk.Button(install_frame, text="🔄 Check Status", 
-                  command=self.check_installation_status).pack(side='left', padx=(0, 10))
-        
-        ttk.Button(install_frame, text="📥 Install CleanShift", 
+        ttk.Button(path_frame, text="Start Analysis", 
                   style='Primary.TButton',
-                  command=self.install_cleanshift).pack(side='left')
+                  command=self.start_analysis).pack(side='left')
         
-        # Uninstall button
-        uninstall_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        uninstall_frame.pack(fill='x', padx=20, pady=(0, 10))
+        # Results area
+        results_frame = tk.Frame(tab_frame, bg=self.colors['white'], 
+                                relief='solid', borderwidth=1)
+        results_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
         
-        ttk.Button(uninstall_frame, text="🗑️ Uninstall CleanShift", 
-                  style='Danger.TButton',
-                  command=self.uninstall_cleanshift).pack(fill='x')
+        # Results text area
+        self.results_text = tk.Text(results_frame, height=20, width=80)
+        results_scroll = tk.Scrollbar(results_frame, command=self.results_text.yview)
+        self.results_text.config(yscrollcommand=results_scroll.set)
         
-        # About section
-        about_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        about_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        tk.Label(about_frame, text="About CleanShift", 
-                font=('Arial', 16, 'bold'), 
-                fg=self.colors['gray_800'], 
-                bg=self.colors['gray_50']).pack(anchor='w', pady=(0, 10))
-        
-        about_text = """CleanShift is a powerful system cleanup and optimization tool for Windows.
-
-Features:
-• Analyze disk space usage and find large folders
-• Clean temporary files, browser caches, and system caches
-• Move installed packages and folders to other drives
-• Manage development environments and tools
-
-Get started by checking your disk space status on the Dashboard tab.
-"""
-        tk.Label(about_frame, text=about_text, 
-                 font=('Arial', 12), 
-                 fg=self.colors['gray_700'], 
-                 bg=self.colors['gray_50'],
-                 wraplength=600, justify="left").pack(anchor='w')
+        self.results_text.pack(side='left', fill='both', expand=True, padx=10, pady=10)
+        results_scroll.pack(side='right', fill='y', pady=10)
     
     def create_about_tab(self):
         """Create about and help tab"""
         tab_frame = tk.Frame(self.notebook, bg=self.colors['gray_50'])
         self.notebook.add(tab_frame, text="  ℹ️ About  ")
         
-        # About content
-        about_text = """CleanShift - CLI utility to clean and shift C drive content to other drives
+        # About section
+        about_frame = tk.Frame(tab_frame, bg=self.colors['white'], padx=40, pady=40)
+        about_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        tk.Label(about_frame, text="CleanShift", 
+                font=('Arial', 24, 'bold'), 
+                fg=self.colors['gray_800'], 
+                bg=self.colors['white']).pack(pady=(0, 10))
+        
+        tk.Label(about_frame, text="Version 1.0.0", 
+                font=('Arial', 12), 
+                fg=self.colors['gray_600'], 
+                bg=self.colors['white']).pack(pady=(0, 20))
+        
+        about_text = """
+CleanShift is a comprehensive system cleanup and optimization tool designed to:
 
-Version: 1.0.0
-Author: CleanShift Team
+• Clean temporary files, cache, and system junk
+• Analyze disk usage and suggest optimizations  
+• Move applications to free up C: drive space
+• Manage development environments
+• Optimize system performance
 
 Features:
-- Disk Analysis: Scan C: drive and identify large folders
-- Smart Cleanup: Remove temp files, browser caches, system caches
-- Package Moving: Move folders to other drives with symbolic links
-- Drive Status: Monitor disk space across all drives
-- Safety First: Dry run mode and system directory protection
-- Standalone: No dependencies - single executable file
+✓ Safe file operations with preview mode
+✓ Intelligent application moving with symlinks
+✓ Development environment cleanup
+✓ Modern, intuitive interface
+✓ System-wide installation option
 
-Usage:
-- Check Drive Status: cleanshift status
-- Analyze Large Folders: cleanshift analyze --min-size 500
-- Clean Temporary Files: cleanshift clean --temp-files --browser-cache --dry-run
-- Move Large Folders: cleanshift move --source "C:\\Users\\Username\\Downloads" --target-drive D:
-
-For more information, visit the [CleanShift GitHub page](https://github.com/theaathish/CleanShift).
-"""
-        tk.Label(tab_frame, text=about_text, 
-                 font=('Arial', 12), 
-                 fg=self.colors['gray_700'], 
-                 bg=self.colors['gray_50'],
-                 wraplength=600, justify="left").pack(anchor='w', padx=20, pady=20)
+Created with ❤️ for Windows users who want to keep their systems clean and optimized.
+        """
         
-        # Links frame
-        links_frame = tk.Frame(tab_frame, bg=self.colors['gray_50'])
-        links_frame.pack(fill='x', padx=20, pady=(0, 20))
+        tk.Label(about_frame, text=about_text, 
+                font=('Arial', 10), 
+                fg=self.colors['gray_700'], 
+                bg=self.colors['white'],
+                justify='left').pack(pady=(0, 20))
         
-        # GitHub link
-        github_link = ttk.Label(links_frame, text="GitHub Repository", 
-                               foreground=self.colors['primary'],
-                               cursor="hand2",
-                               font=('Arial', 12, 'underline'))
-        github_link.pack(side='left', padx=(0, 10))
-        github_link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/theaathish/CleanShift"))
+        # Links
+        links_frame = tk.Frame(about_frame, bg=self.colors['white'])
+        links_frame.pack()
         
-        # License link
-        license_link = ttk.Label(links_frame, text="MIT License", 
-                                foreground=self.colors['primary'],
-                                cursor="hand2",
-                                font=('Arial', 12, 'underline'))
-        license_link.pack(side='left', padx=(0, 10))
-        license_link.bind("<Button-1>", lambda e: webbrowser.open("https://opensource.org/licenses/MIT"))
+        ttk.Button(links_frame, text="GitHub Repository", 
+                  command=lambda: webbrowser.open("https://github.com/theaathish/CleanShift")).pack(side='left', padx=(0, 10))
         
-        # Issues link
-        issues_link = ttk.Label(links_frame, text="Report an Issue", 
-                               foreground=self.colors['primary'],
-                               cursor="hand2",
-                               font=('Arial', 12, 'underline'))
-        issues_link.pack(side='left')
-        issues_link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/theaathish/CleanShift/issues"))
+        ttk.Button(links_frame, text="Report Issue", 
+                  command=lambda: webbrowser.open("https://github.com/theaathish/CleanShift/issues")).pack(side='left')
     
+    # Callback methods
     def check_admin_status(self):
         """Check and display admin status"""
         if is_admin():
             self.admin_label.config(text="Administrator ✓", fg=self.colors['success'])
         else:
             self.admin_label.config(text="Limited User ⚠", fg=self.colors['warning'])
-        
-        # Update system info
-        self.update_system_info()
-    
-    def update_system_info(self):
-        """Update system information display"""
-        try:
-            import psutil
-            cpu_percent = psutil.cpu_percent(interval=1)
-            memory = psutil.virtual_memory()
-            
-            info_text = f"""OS: {platform.system()} {platform.release()}
-CPU Usage: {cpu_percent}%
-Memory: {format_size(memory.used)} / {format_size(memory.total)} ({memory.percent}% used)
-Administrator: {'Yes' if is_admin() else 'No'}"""
-            
-            self.system_info_label.config(text=info_text)
-        except Exception:
-            self.system_info_label.config(text="System information unavailable")
     
     def refresh_dashboard(self):
-        """Refresh the dashboard data"""
-        # Update drive status cards
-        for widget in self.drives_container.winfo_children():
-            widget.destroy()
-        
-        drives = self.analyzer.get_drive_info()
-        for drive in drives:
-            drive_card = tk.Frame(self.drives_container, 
-                                 bg=self.colors['white'],
-                                 relief='solid',
-                                 borderwidth=1)
-            drive_card.pack(fill='x', pady=5)
+        """Refresh dashboard data"""
+        def update_drives():
+            # Clear existing drive cards
+            for widget in self.drives_container.winfo_children():
+                widget.destroy()
             
-            tk.Label(drive_card, text=drive['drive'], 
-                     font=('Arial', 14, 'bold'), 
-                     fg=self.colors['gray_800'], 
-                     bg=self.colors['white']).pack(side='left', padx=10, pady=10)
+            # Get drive info
+            drives = self.analyzer.get_drive_info()
             
-            usage_percent = f"{drive['usage_percent']:.1f}%"
-            tk.Label(drive_card, text=usage_percent, 
-                     font=('Arial', 14, 'bold'), 
-                     fg=self.colors['primary'], 
-                     bg=self.colors['white']).pack(side='right', padx=10, pady=10)
+            for i, drive in enumerate(drives):
+                self.create_drive_card(self.drives_container, drive, i)
         
-        # Update system info
-        self.update_system_info()
+        threading.Thread(target=update_drives, daemon=True).start()
+    
+    def create_drive_card(self, parent, drive_info, index):
+        """Create a drive status card"""
+        card = tk.Frame(parent, bg=self.colors['white'], 
+                       relief='solid', borderwidth=1, padx=15, pady=15)
+        card.grid(row=0, column=index, padx=10, sticky='ew')
+        
+        # Drive letter
+        tk.Label(card, text=drive_info['drive'], 
+                font=('Arial', 16, 'bold'), 
+                fg=self.colors['gray_800'], 
+                bg=self.colors['white']).pack()
+        
+        # Usage percentage
+        usage = drive_info['usage_percent']
+        color = self.colors['danger'] if usage > 90 else self.colors['warning'] if usage > 75 else self.colors['success']
+        
+        tk.Label(card, text=f"{usage:.1f}% Used", 
+                font=('Arial', 12), 
+                fg=color, 
+                bg=self.colors['white']).pack()
+        
+        # Size info
+        tk.Label(card, text=f"Free: {format_size(drive_info['free'])}", 
+                font=('Arial', 10), 
+                fg=self.colors['gray_600'], 
+                bg=self.colors['white']).pack()
+        
+        tk.Label(card, text=f"Total: {format_size(drive_info['total'])}", 
+                font=('Arial', 10), 
+                fg=self.colors['gray_600'], 
+                bg=self.colors['white']).pack()
     
     def quick_clean(self):
-        """Perform a quick clean of common areas"""
-        self.cleaner.clean_temp_files()
-        self.cleaner.clean_browser_cache()
-        self.cleaner.clean_system_cache()
+        """Perform quick cleanup"""
+        def cleanup():
+            try:
+                total_freed = 0
+                total_freed += self.cleaner.clean_temp_files()
+                total_freed += self.cleaner.clean_browser_cache()
+                
+                messagebox.showinfo("Success", 
+                                  f"Quick cleanup completed!\nFreed: {format_size(total_freed)}")
+                self.refresh_dashboard()
+            except Exception as e:
+                messagebox.showerror("Error", f"Cleanup failed: {str(e)}")
         
-        messagebox.showinfo("Quick Clean", "Quick clean completed successfully.")
-        self.refresh_dashboard()
+        if messagebox.askyesno("Confirm", "Perform quick cleanup of temporary files and browser cache?"):
+            threading.Thread(target=cleanup, daemon=True).start()
     
     def quick_analyze(self):
-        """Perform a quick analysis of disk usage"""
-        self.analyzer.scan_directory("C:\\", 100 * 1024 * 1024)
-        messagebox.showinfo("Quick Analyze", "Quick analysis completed. Check the Analyze tab for details.")
-        self.refresh_dashboard()
+        """Perform quick disk analysis"""
+        self.notebook.select(2)  # Switch to analyze tab
+        self.start_analysis()
     
-    def update_min_size_label(self, value):
-        """Update the minimum size label for analysis"""
-        min_size_mb = int(float(value))
-        self.min_size_label.config(text=f"{min_size_mb} MB")
-    
-    def analyze_disk(self):
-        """Analyze disk usage and update results treeview"""
-        min_size = self.min_size_var.get() * 1024 * 1024  # Convert to bytes
-        results = self.analyzer.scan_directory("C:\\", min_size)
+    def clean_selected(self):
+        """Clean selected options"""
+        selected = [key for key, var in self.clean_vars.items() if var.get()]
         
-        # Clear existing results
-        self.results_tree.delete(*self.results_tree.get_children())
-        
-        # Insert new results
-        for result in results:
-            self.results_tree.insert("", "end", values=(result['path'], format_size(result['size']), result['type']))
-        
-        messagebox.showinfo("Analyze Disk", "Disk analysis completed. Check the results below.")
-    
-    def sort_results(self, column):
-        """Sort the results treeview by column"""
-        try {
-            # Get current sorting order
-            current_order = self.results_tree.heading(column, "sort")
-            new_order = "ascending" if current_order == "descending" else "descending"
-            
-            # Sort data
-            data = [(self.results_tree.item(item)["values"], item) for item in self.results_tree.get_children("")]
-            data.sort(reverse=new_order=="descending")
-            
-            # Update treeview
-            for index, (values, item) in enumerate(data):
-                self.results_tree.item(item, text="", values=values)
-            
-            # Update column heading
-            self.results_tree.heading(column, command=lambda: self.sort_results(column))
-        } except Exception as e {
-            print(f"Error sorting results: {e}")
-        }
-    
-    def open_folder(self, event):
-        """Open the selected folder in File Explorer"""
-        try:
-            item = self.results_tree.selection()[0]
-            folder_path = self.results_tree.item(item, "values")[0]
-            subprocess.Popen(f'explorer "{folder_path}"')
-        except Exception as e:
-            print(f"Error opening folder: {e}")
-    
-    def browse_source_folder(self):
-        """Open a folder dialog to select the source folder"""
-        folder_path = filedialog.askdirectory()
-        if folder_path:
-            self.source_path_var.set(folder_path)
-    
-    def browse_target_drive(self):
-        """Open a folder dialog to select the target drive"""
-        drive_path = filedialog.askdirectory()
-        if drive_path:
-            # Ensure the selected path is a drive letter
-            drive_letter = os.path.splitdrive(drive_path)[0]
-            self.target_drive_var.set(drive_letter)
-    
-    def move_packages(self):
-        """Move the selected packages/folders to the target drive"""
-        source = self.source_path_var.get()
-        target_drive = self.target_drive_var.get()
-        
-        if not source or not target_drive:
-            messagebox.showwarning("Missing Information", "Please specify both source and target drive.")
-            return
-        
-        # Confirm action
-        if self.confirm_actions.get() and not messagebox.askyesno("Confirm Move", f"Move {source} to {target_drive}?"):
-            return
-        
-        # Perform the move
-        success = self.mover.move_with_symlink(source, target_drive)
-        
-        if success:
-            messagebox.showinfo("Move Successful", f"Successfully moved {source} to {target_drive}.")
-            self.refresh_dashboard()
-        else:
-            messagebox.showerror("Move Failed", f"Failed to move {source}.")
-    
-    def remove_selected_envs(self):
-        """Remove the selected development environments"""
-        selected = self.env_listbox.curselection()
         if not selected:
+            messagebox.showwarning("Warning", "No cleaning options selected!")
             return
         
-        # Confirm action
-        if not messagebox.askyesno("Confirm Removal", "Remove selected environments?"):
+        if not messagebox.askyesno("Confirm", f"Clean {len(selected)} selected items?"):
             return
         
-        for index in selected:
-            env_name = self.env_listbox.get(index)
-            success = self.env_cleaner.remove_environment(env_name)
-            
-            if success:
-                self.env_listbox.delete(index)
-        
-        messagebox.showinfo("Removal Complete", "Selected environments have been removed.")
-    
-    def refresh_env_list(self):
-        """Refresh the list of installed environments"""
-        self.env_listbox.delete(0, tk.END)
-        
-        envs = self.env_cleaner.get_installed_environments()
-        for env in envs:
-            self.env_listbox.insert(tk.END, env)
-    
-    def check_installation_status(self):
-        """Check and display the installation status of CleanShift"""
-        try:
-            import winreg
-            
-            # Check if CleanShift is installed
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
-                               "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
-                               0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
-                try:
-                    display_name, _ = winreg.QueryValueEx(key, "DisplayName")
-                    if "CleanShift" in display_name:
-                        self.install_status_label.config(text="CleanShift is installed.", 
-                                                        fg=self.colors['success'])
-                        return True
-                except FileNotFoundError:
-                    pass
-            
-            self.install_status_label.config(text="CleanShift is not installed.", 
-                                            fg=self.colors['danger'])
-            return False
-        except Exception as e:
-            self.install_status_label.config(text=f"Error checking status: {e}", 
-                                            fg=self.colors['danger'])
-            return False
-    
-    def install_cleanshift(self):
-        """Install CleanShift to the system"""
-        try:
-            import shutil
-            import winreg
-            
-            # Get current executable path
-            if getattr(sys, 'frozen', False):
-                exe_path = sys.executable
-            else:
-                messagebox.showerror("Installation Error", "This command only works with the compiled executable.")
-                return
-            
-            # Install to Program Files
-            install_dir = "C:\\Program Files\\CleanShift"
-            os.makedirs(install_dir, exist_ok=True)
-            target_path = os.path.join(install_dir, "cleanshift.exe")
-            
-            # Copy executable
-            shutil.copy2(exe_path, target_path)
-            
-            # Add to PATH
+        def cleanup():
             try:
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
-                                   "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
-                                   0, winreg.KEY_ALL_ACCESS) as key:
-                    try:
-                        path_value, _ = winreg.QueryValueEx(key, "PATH")
-                    except FileNotFoundError:
-                        path_value = ""
-                    
-                    new_path = path_value + ";" + install_dir if path_value else install_dir
-                    winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, new_path)
-                    self.install_status_label.config(text="CleanShift installed successfully.", 
-                                                    fg=self.colors['success'])
-            except PermissionError:
-                self.install_status_label.config(text="Could not modify system PATH. Manual addition required.", 
-                                                fg=self.colors['warning'])
-            
-            # Create desktop shortcut (optional)
-            try:
-                import win32com.client
-                desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-                shortcut_path = os.path.join(desktop, "CleanShift.lnk")
+                total_freed = 0
                 
-                shell = win32com.client.Dispatch("WScript.Shell")
-                shortcut = shell.CreateShortCut(shortcut_path)
-                shortcut.Targetpath = target_path
-                shortcut.WorkingDirectory = install_dir
-                shortcut.IconLocation = target_path
-                shortcut.save()
-                self.install_status_label.config(text="Desktop shortcut created.", 
-                                                fg=self.colors['success'])
-            except Exception:
-                pass  # Desktop shortcut is optional
-            
-            messagebox.showinfo("Installation Complete", "CleanShift has been installed. Please restart your command prompt.")
-        except Exception as e:
-            messagebox.showerror("Installation Error", str(e))
+                if 'temp_files' in selected:
+                    total_freed += self.cleaner.clean_temp_files()
+                if 'browser_cache' in selected:
+                    total_freed += self.cleaner.clean_browser_cache()
+                if 'system_cache' in selected:
+                    total_freed += self.cleaner.clean_system_cache()
+                
+                messagebox.showinfo("Success", 
+                                  f"Cleanup completed!\nFreed: {format_size(total_freed)}")
+                self.refresh_dashboard()
+            except Exception as e:
+                messagebox.showerror("Error", f"Cleanup failed: {str(e)}")
+        
+        threading.Thread(target=cleanup, daemon=True).start()
     
-    def uninstall_cleanshift(self):
-        """Uninstall CleanShift from the system"""
-        try:
-            import winreg
-            import shutil
-            
-            install_dir = "C:\\Program Files\\CleanShift"
-            
-            if not os.path.exists(install_dir):
-                messagebox.showinfo("Uninstall CleanShift", "CleanShift is not installed.")
-                return
-            
-            # Confirm uninstall
-            if not messagebox.askyesno("Confirm Uninstall", "Uninstall CleanShift?"):
-                return
-            
-            # Remove from PATH
+    def preview_clean(self):
+        """Preview what would be cleaned"""
+        selected = [key for key, var in self.clean_vars.items() if var.get()]
+        
+        if not selected:
+            messagebox.showwarning("Warning", "No cleaning options selected!")
+            return
+        
+        def preview():
             try:
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 
-                                   "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment",
-                                   0, winreg.KEY_ALL_ACCESS) as key:
-                    path_value, _ = winreg.QueryValueEx(key, "PATH")
-                    new_path = path_value.replace(f";{install_dir}", "").replace(install_dir, "")
-                    winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, new_path)
-            except:
-                pass
-            
-            # Remove installation directory
-            shutil.rmtree(install_dir, ignore_errors=True)
-            
-            # Remove desktop shortcut
-            desktop_shortcut = os.path.join(os.path.expanduser("~"), "Desktop", "CleanShift.lnk")
-            if os.path.exists(desktop_shortcut):
-                os.remove(desktop_shortcut)
-            
-            messagebox.showinfo("Uninstall CleanShift", "CleanShift has been uninstalled.")
-            self.install_status_label.config(text="CleanShift is not installed.", 
-                                            fg=self.colors['danger'])
-        except Exception as e:
-            messagebox.showerror("Uninstall Error", str(e))
+                total_size = 0
+                details = []
+                
+                if 'temp_files' in selected:
+                    size = self.cleaner.clean_temp_files(dry_run=True)
+                    details.append(f"Temporary files: {format_size(size)}")
+                    total_size += size
+                if 'browser_cache' in selected:
+                    size = self.cleaner.clean_browser_cache(dry_run=True)
+                    details.append(f"Browser cache: {format_size(size)}")
+                    total_size += size
+                
+                preview_text = "\n".join(details)
+                preview_text += f"\n\nTotal space to be freed: {format_size(total_size)}"
+                
+                messagebox.showinfo("Preview", preview_text)
+            except Exception as e:
+                messagebox.showerror("Error", f"Preview failed: {str(e)}")
+        
+        threading.Thread(target=preview, daemon=True).start()
+    
+    def browse_scan_path(self):
+        """Browse for scan path"""
+        path = filedialog.askdirectory(initialdir=self.scan_path.get())
+        if path:
+            self.scan_path.set(path)
+    
+    def start_analysis(self):
+        """Start disk analysis"""
+        path = self.scan_path.get()
+        
+        def analyze():
+            try:
+                self.results_text.delete(1.0, tk.END)
+                self.results_text.insert(tk.END, f"Analyzing {path}...\n\n")
+                self.results_text.update()
+                
+                results = self.analyzer.scan_directory(path, 50 * 1024 * 1024)  # 50MB minimum
+                
+                self.results_text.delete(1.0, tk.END)
+                self.results_text.insert(tk.END, f"Analysis Results for {path}\n")
+                self.results_text.insert(tk.END, "=" * 50 + "\n\n")
+                
+                for result in results[:20]:  # Show top 20 results
+                    self.results_text.insert(tk.END, f"📁 {result['path']}\n")
+                    self.results_text.insert(tk.END, f"   Size: {format_size(result['size'])}\n")
+                    self.results_text.insert(tk.END, f"   Type: {result['type']}\n")
+                    self.results_text.insert(tk.END, f"   Suggestion: {self.get_suggestion(result)}\n\n")
+                
+                if len(results) > 20:
+                    self.results_text.insert(tk.END, f"... and {len(results) - 20} more folders\n")
+                
+            except Exception as e:
+                self.results_text.delete(1.0, tk.END)
+                self.results_text.insert(tk.END, f"Analysis failed: {str(e)}")
+        
+        threading.Thread(target=analyze, daemon=True).start()
+    
+    def get_suggestion(self, folder_info):
+        """Get suggestion for a folder"""
+        folder_type = folder_info['type'].lower()
+        size = folder_info['size']
+        
+        if 'cache' in folder_type:
+            return "Safe to clean"
+        elif 'downloads' in folder_type and size > 1024*1024*1024:
+            return "Review and clean old files"
+        elif size > 5*1024*1024*1024:
+            return "Consider moving to another drive"
+        else:
+            return "Review manually"
     
     def run(self):
         """Run the GUI application"""
@@ -919,26 +568,4 @@ Administrator: {'Yes' if is_admin() else 'No'}"""
         y = (self.root.winfo_screenheight() // 2) - (self.root.winfo_height() // 2)
         self.root.geometry(f"+{x}+{y}")
         
-        # Show welcome message for first-time users
-        if not self.check_installation_status():
-            self.show_welcome_dialog()
-        
         self.root.mainloop()
-    
-    def show_welcome_dialog(self):
-        """Show welcome dialog for new users"""
-        welcome_text = """Welcome to CleanShift!
-
-This is your first time running CleanShift. Here's what you can do:
-
-• 📊 Dashboard: View drive status and system info
-• 🧹 Clean: Remove temporary files and optimize system
-• 🔍 Analyze: Find large files and folders consuming space
-• 📦 Move Apps: Relocate applications to free up C: drive
-• 🔧 Dev Environments: Clean development tools and caches
-
-For full functionality, consider installing CleanShift to your system from the Settings tab.
-
-Enjoy using CleanShift!"""
-        
-        messagebox.showinfo("Welcome to CleanShift", welcome_text)
