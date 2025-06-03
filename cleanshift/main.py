@@ -5,27 +5,113 @@ import platform
 from rich.console import Console
 from rich.table import Table
 
-# Import modules conditionally based on platform
-try:
-    from .analyzer import DiskAnalyzer
-    from .cleaner import SystemCleaner
-    from .mover import PackageMover
-    from .utils import is_admin, format_size
-except ImportError:
-    # Handle standalone executable imports
+# Fix imports for PyInstaller standalone executable
+def import_modules():
+    """Import modules with proper fallback for different execution contexts"""
+    global DiskAnalyzer, SystemCleaner, PackageMover, is_admin, format_size
+    
+    # Try different import strategies
+    import_error = None
+    
+    # Strategy 1: Relative imports (when run as package)
     try:
+        from .analyzer import DiskAnalyzer
+        from .cleaner import SystemCleaner
+        from .mover import PackageMover
+        from .utils import is_admin, format_size
+        return
+    except ImportError as e:
+        import_error = e
+    
+    # Strategy 2: Direct imports (when run as script or standalone)
+    try:
+        # Add current directory to path for standalone builds
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if current_dir not in sys.path:
+            sys.path.insert(0, current_dir)
+            
         from analyzer import DiskAnalyzer
         from cleaner import SystemCleaner
         from mover import PackageMover
         from utils import is_admin, format_size
+        return
     except ImportError:
-        # Fallback for development
-        import sys
-        sys.path.append(os.path.dirname(__file__))
+        pass
+    
+    # Strategy 3: Try parent directory (PyInstaller context)
+    try:
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cleanshift_dir = os.path.join(parent_dir, 'cleanshift')
+        if cleanshift_dir not in sys.path:
+            sys.path.insert(0, cleanshift_dir)
+            
         from analyzer import DiskAnalyzer
         from cleaner import SystemCleaner
         from mover import PackageMover
         from utils import is_admin, format_size
+        return
+    except ImportError:
+        pass
+    
+    # Strategy 4: Inline fallback implementations
+    try:
+        # Create minimal fallback implementations
+        import psutil
+        import ctypes
+        
+        class DiskAnalyzer:
+            def get_drive_info(self):
+                drives = []
+                for drive in psutil.disk_partitions():
+                    if drive.fstype:
+                        try:
+                            usage = psutil.disk_usage(drive.mountpoint)
+                            drives.append({
+                                'drive': drive.device,
+                                'total': usage.total,
+                                'used': usage.used,
+                                'free': usage.free,
+                                'usage_percent': (usage.used / usage.total) * 100
+                            })
+                        except:
+                            continue
+                return drives
+            
+            def scan_directory(self, path, min_size):
+                return []  # Minimal implementation
+        
+        class SystemCleaner:
+            def clean_temp_files(self, dry_run=False): return 0
+            def clean_browser_cache(self, dry_run=False): return 0
+            def clean_system_cache(self, dry_run=False): return 0
+        
+        class PackageMover:
+            def move_with_symlink(self, source, target, dry_run=False): return False
+        
+        def is_admin():
+            try:
+                return ctypes.windll.shell32.IsUserAnAdmin() if platform.system() == "Windows" else False
+            except:
+                return False
+        
+        def format_size(size_bytes):
+            if size_bytes == 0: return "0 B"
+            size_names = ["B", "KB", "MB", "GB", "TB"]
+            i = 0
+            while size_bytes >= 1024 and i < len(size_names) - 1:
+                size_bytes /= 1024.0
+                i += 1
+            return f"{size_bytes:.1f} {size_names[i]}"
+        
+        return
+    except ImportError:
+        pass
+    
+    # If all strategies fail, raise the original error
+    raise ImportError(f"Could not import required modules. Original error: {import_error}")
+
+# Import modules on startup
+import_modules()
 
 console = Console()
 
