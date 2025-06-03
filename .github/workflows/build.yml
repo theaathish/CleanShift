@@ -1,0 +1,67 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller click rich psutil colorama pywin32
+    
+    - name: Build Windows executable
+      run: |
+        pyinstaller --onefile --console --name cleanshift --add-data "cleanshift;cleanshift" --hidden-import click --hidden-import rich --hidden-import psutil --hidden-import colorama --hidden-import win32api --hidden-import win32file --hidden-import winreg cleanshift/main.py
+    
+    - name: Test executable
+      run: |
+        dist\cleanshift.exe --version
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cleanshift-windows-exe
+        path: dist/cleanshift.exe
+        retention-days: 30
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/cleanshift.exe
+        body: |
+          ## CleanShift Windows Release ${{ github.ref_name }}
+          
+          ### 🚀 Quick Install
+          ```cmd
+          curl -L https://github.com/theaathish/CleanShift/releases/latest/download/cleanshift.exe -o cleanshift.exe
+          cleanshift.exe install
+          ```
+          
+          ### 📋 Manual Install
+          1. Download `cleanshift.exe`
+          2. Run as administrator: `cleanshift.exe install`
+          3. Use globally: `cleanshift <command>`
+          
+          ### ⚡ Features
+          - Standalone executable (no dependencies)
+          - System PATH integration
+          - Drive space analysis and cleanup
+          - Safe file operations with dry-run mode
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
