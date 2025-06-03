@@ -1,93 +1,112 @@
 # CleanShift
 
-A powerful standalone CLI utility for Windows that cleans up and offloads software packages from the C: drive to other available drives to free up space.
+A powerful standalone GUI application for Windows that cleans up and optimizes your system with an intuitive interface.
 
-## 🚀 Quick Installation (One Command)
+## 🚀 Quick Start
 
-### Option 1: Direct Download & Install
-```batch
-curl -L https://github.com/theaathish/CleanShift/raw/main/install.bat -o install.bat && install.bat
-```
-
-### Option 2: PowerShell Install
-```powershell
-iwr -useb https://github.com/theaathish/CleanShift/raw/main/install.ps1 | iex
-```
-
-### Option 3: Manual Download
+### One-Click Installation
 1. Download `cleanshift.exe` from [Releases](https://github.com/theaathish/CleanShift/releases/latest)
-2. Run as administrator: `cleanshift.exe install`
-3. Use globally: `cleanshift <command>`
+2. Double-click to run - no installation required!
+3. Enjoy a clean, optimized system
 
 ## ✨ Features
 
-- **🔍 Disk Analysis**: Scan C: drive and identify large folders
-- **🧹 Smart Cleanup**: Remove temp files, browser caches, system caches  
-- **📦 Package Moving**: Move folders to other drives with symbolic links
-- **📊 Drive Status**: Monitor disk space across all drives
-- **🔒 Safety First**: Dry run mode and system directory protection
-- **⚡ Standalone**: No dependencies - single executable file
+- **🖥️ Modern GUI**: Clean, intuitive interface inspired by modern design
+- **📊 Dashboard**: Real-time drive status and system information
+- **🧹 Smart Cleanup**: Remove temp files, browser cache, system junk
+- **🔍 Disk Analysis**: Find large files and suggest optimizations
+- **📦 App Management**: Move applications to free up C: drive space
+- **🔧 Dev Environment Cleanup**: Clean Node.js, Python, and other dev tools
+- **⚡ Standalone**: Single executable - no dependencies required
 
-## 📖 Usage
+## 📖 How to Use
 
-### Check Drive Status
-```bash
-cleanshift status
-```
+### Dashboard
+- View drive space usage across all drives
+- Quick system information and status
+- One-click quick actions
 
-### Analyze Large Folders
-```bash
-cleanshift analyze --min-size 500
-```
+### Clean Tab
+- ✅ Temporary files cleanup
+- ✅ Browser cache removal
+- ✅ System cache optimization
+- ✅ Recycle bin emptying
+- ✅ RAM and DNS cache clearing
 
-### Clean Temporary Files
-```bash
-cleanshift clean --temp-files --browser-cache --dry-run
-```
+### Analyze Tab
+- Scan any drive or folder for large files
+- Get suggestions for space optimization
+- Identify movable applications and data
 
-### Move Large Folders
-```bash
-cleanshift move --source "C:\Users\Username\Downloads" --target-drive D:
-```
+### Move Apps Tab
+- Find applications that can be moved to other drives
+- Safe relocation with symbolic links
+- Free up valuable C: drive space
 
-## 🛠️ Build from Source
+### Dev Environments Tab
+- Detect Node.js, Python, Java development environments
+- Clean package caches and build artifacts
+- Optimize development workspace
 
+### Settings Tab
+- Install to system for easy access
+- Configure automatic cleanup preferences
+- Manage application settings
+
+## 🛡️ Safety Features
+
+- **Preview Mode**: See what will be cleaned before taking action
+- **System Protection**: Avoids critical system directories
+- **Confirmation Prompts**: User confirmation for destructive operations
+- **Symbolic Links**: Safe application moving without breaking functionality
+- **Admin Detection**: Warns when administrator privileges are needed
+
+## 🔧 System Requirements
+
+- Windows 10/11
+- No additional software required
+- Administrator privileges recommended for full functionality
+
+## 🛠️ For Developers
+
+### Build from Source
 ```bash
 # Clone repository
 git clone https://github.com/theaathish/CleanShift.git
 cd CleanShift
 
 # Install build dependencies
-pip install pyinstaller
+pip install pyinstaller pillow psutil pywin32
 
-# Build standalone executable
+# Build GUI executable
 python build.py
 ```
 
-## 🔧 Commands
-
-| Command | Description |
-|---------|-------------|
-| `cleanshift status` | Show disk space for all drives |
-| `cleanshift analyze` | Find large folders on C: drive |
-| `cleanshift clean` | Remove temporary/cache files |
-| `cleanshift move` | Move folders to other drives |
-| `cleanshift install` | Install to system PATH |
-
-## 🛡️ Safety Features
-
-- Administrator privilege warnings
-- Dry run mode for testing
-- System directory protection  
-- Confirmation prompts for destructive operations
-- Automatic symbolic link creation
-
-## 📋 Requirements
-
-- Windows 10/11
-- Administrator privileges (recommended)
-- No additional dependencies needed
+### Project Structure
+```
+CleanShift/
+├── cleanshift/
+│   ├── main.py          # GUI entry point
+│   ├── gui_app.py       # Main GUI application
+│   ├── analyzer.py      # Disk analysis
+│   ├── cleaner.py       # System cleanup
+│   ├── mover.py         # File/app moving
+│   ├── env_cleaner.py   # Dev environment cleanup
+│   └── utils.py         # Utilities
+├── assets/
+│   ├── logo.png         # Application logo
+│   └── icon.ico         # Window icon
+└── build.py             # Build script
+```
 
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+## 🙏 Acknowledgments
+
+Built with ❤️ for Windows users who want to keep their systems clean and optimized.
