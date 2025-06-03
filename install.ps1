@@ -1,31 +1,33 @@
-# CleanShift One-Command Installer
-Write-Host "🚀 Installing CleanShift..." -ForegroundColor Green
-
-# Check admin privileges
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "⚠️  Administrator privileges required" -ForegroundColor Yellow
-    Write-Host "Please run PowerShell as administrator" -ForegroundColor Red
-    exit 1
-}
+# CleanShift GUI Installer
+Write-Host "🚀 Installing CleanShift GUI..." -ForegroundColor Green
 
 try {
     $url = "https://github.com/theaathish/CleanShift/releases/latest/download/cleanshift.exe"
-    $temp = "$env:TEMP\cleanshift.exe"
+    $installDir = "$env:LOCALAPPDATA\CleanShift"
+    $exePath = "$installDir\cleanshift.exe"
     
     Write-Host "📥 Downloading CleanShift..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $url -OutFile $temp -UseBasicParsing
     
-    Write-Host "⚙️  Installing to system..." -ForegroundColor Cyan
-    & $temp install
+    # Create install directory
+    if (-not (Test-Path $installDir)) {
+        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+    }
+    
+    # Download executable
+    Invoke-WebRequest -Uri $url -OutFile $exePath -UseBasicParsing
+    
+    # Create desktop shortcut
+    $WshShell = New-Object -comObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut("$env:USERPROFILE\Desktop\CleanShift.lnk")
+    $Shortcut.TargetPath = $exePath
+    $Shortcut.WorkingDirectory = $installDir
+    $Shortcut.Description = "CleanShift - System Cleanup & Optimizer"
+    $Shortcut.Save()
     
     Write-Host ""
     Write-Host "✅ CleanShift installed successfully!" -ForegroundColor Green
-    Write-Host "💡 Usage examples:" -ForegroundColor White
-    Write-Host "   cleanshift status" -ForegroundColor Gray
-    Write-Host "   cleanshift analyze" -ForegroundColor Gray
-    Write-Host "   cleanshift clean --temp-files" -ForegroundColor Gray
+    Write-Host "🖥️  Double-click desktop shortcut to launch" -ForegroundColor White
     
 } catch {
     Write-Host "❌ Installation failed: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Please check your internet connection" -ForegroundColor Yellow
 }

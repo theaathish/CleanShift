@@ -14,12 +14,12 @@ VSVersionInfo(
       StringTable(
         u'040904B0',
         [StringStruct(u'CompanyName', u'CleanShift'),
-        StringStruct(u'FileDescription', u'CleanShift - Drive Cleanup Utility'),
+        StringStruct(u'FileDescription', u'CleanShift - System Cleanup & Optimizer GUI'),
         StringStruct(u'FileVersion', u'1.0.0.0'),
         StringStruct(u'InternalName', u'cleanshift'),
         StringStruct(u'LegalCopyright', u'Copyright (C) 2024'),
         StringStruct(u'OriginalFilename', u'cleanshift.exe'),
-        StringStruct(u'ProductName', u'CleanShift'),
+        StringStruct(u'ProductName', u'CleanShift GUI'),
         StringStruct(u'ProductVersion', u'1.0.0.0')])
     ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])

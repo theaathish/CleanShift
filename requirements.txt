@@ -1,6 +1,7 @@
-click>=8.0.0
+# GUI Application Dependencies
 psutil>=5.9.0
-rich>=13.0.0
-colorama>=0.4.6
-pywin32>=306
 pillow>=9.0.0
+pywin32>=306; sys_platform == "win32"
+
+# Build Dependencies (for development)
+pyinstaller>=5.0.0

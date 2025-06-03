@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build Windows GUI Executable
 
 on:
   push:
@@ -21,20 +21,32 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller click rich psutil colorama pywin32
+        pip install pyinstaller tkinter psutil pillow pywin32
     
-    - name: Build Windows executable
+    - name: Create assets directory
       run: |
-        pyinstaller --onefile --console --name cleanshift --add-data "cleanshift;cleanshift" --hidden-import click --hidden-import rich --hidden-import psutil --hidden-import colorama --hidden-import win32api --hidden-import win32file --hidden-import winreg cleanshift/main.py
+        mkdir -p assets
+        echo "# Placeholder for assets" > assets/README.md
     
-    - name: Test executable
+    - name: Build Windows GUI executable
       run: |
-        dist\cleanshift.exe --version
+        pyinstaller --onefile --windowed --name cleanshift --add-data "cleanshift;cleanshift" --add-data "assets;assets" --hidden-import tkinter --hidden-import PIL --hidden-import psutil --hidden-import win32api --hidden-import win32file cleanshift/main.py
+    
+    - name: Test executable exists
+      run: |
+        if (Test-Path "dist\cleanshift.exe") { 
+          Write-Host "✅ Build successful" 
+          $size = (Get-Item "dist\cleanshift.exe").Length / 1MB
+          Write-Host "📦 Executable size: $([math]::Round($size, 2)) MB"
+        } else { 
+          Write-Host "❌ Build failed"
+          exit 1 
+        }
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: cleanshift-windows-exe
+        name: cleanshift-windows-gui
         path: dist/cleanshift.exe
         retention-days: 30
     
@@ -45,23 +57,24 @@ jobs:
         files: |
           dist/cleanshift.exe
         body: |
-          ## CleanShift Windows Release ${{ github.ref_name }}
+          ## CleanShift GUI Release ${{ github.ref_name }}
           
           ### 🚀 Quick Install
-          ```cmd
-          curl -L https://github.com/theaathish/CleanShift/releases/latest/download/cleanshift.exe -o cleanshift.exe
-          cleanshift.exe install
+          ```powershell
+          iwr -useb https://github.com/theaathish/CleanShift/raw/main/install.ps1 | iex
           ```
           
           ### 📋 Manual Install
           1. Download `cleanshift.exe`
-          2. Run as administrator: `cleanshift.exe install`
-          3. Use globally: `cleanshift <command>`
+          2. Double-click to run
+          3. No installation required!
           
-          ### ⚡ Features
-          - Standalone executable (no dependencies)
-          - System PATH integration
-          - Drive space analysis and cleanup
-          - Safe file operations with dry-run mode
+          ### ✨ Features
+          - Modern GUI interface
+          - System cleanup and optimization
+          - Drive space analysis
+          - Application management
+          - Development environment cleanup
+          - Standalone executable
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
