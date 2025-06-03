@@ -350,5 +350,16 @@ def uninstall():
     except Exception as e:
         console.print(f"[red]Uninstall failed: {e}[/red]")
 
+@cli.command()
+def gui():
+    """Launch the graphical user interface"""
+    try:
+        from .gui import CleanShiftGUI
+        app = CleanShiftGUI()
+        app.run()
+    except ImportError as e:
+        console.print(f"[red]GUI not available: {e}[/red]")
+        console.print("[yellow]Install GUI dependencies with: pip install pillow[/yellow]")
+
 if __name__ == '__main__':
     cli()
